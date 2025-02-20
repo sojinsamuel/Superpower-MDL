@@ -26,7 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function parseTimer(days, hours, mins, secs = 0) {
-    return (parseInt(days || 0) * 86400000) + (parseInt(hours || 0) * 3600000) + (parseInt(mins || 0) * 60000) + (parseInt(secs || 0) * 1000);
+    return (parseInt(days || 0) * 86400000) + 
+           (parseInt(hours || 0) * 3600000) + 
+           (parseInt(mins || 0) * 60000) + 
+           (parseInt(secs || 0) * 1000);
   }
 
   function isValidUrl(url) {
@@ -122,6 +125,52 @@ document.addEventListener('DOMContentLoaded', () => {
     notifyForm.style.display = 'none';
   }
 
+  function deleteRecentSearch(searchQuery) {
+    chrome.storage.local.get(['recentSearches'], (result) => {
+      let searches = result.recentSearches || [];
+      searches = searches.filter(s => s !== searchQuery);
+      chrome.storage.local.set({ recentSearches: searches }, () => {
+        updateRecentSearches();
+      });
+    });
+  }
+
+  function updateRecentSearches() {
+    chrome.storage.local.get(['recentSearches'], (result) => {
+      const searches = result.recentSearches || [];
+      list.innerHTML = '';
+      if (searches.length === 0) {
+        list.innerHTML = '<div class="search-item">No recent searches</div>';
+      } else {
+        searches.slice(0, 10).forEach((search, index) => {
+          const div = document.createElement('div');
+          div.className = 'search-item';
+          div.innerHTML = `
+            <span class="search-text">${search}</span>
+            <button class="delete-search-btn">X</button>
+          `;
+          div.style.animationDelay = `${index * 0.05}s`;
+          div.querySelector('.search-text').addEventListener('click', () => {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              const isMdlTab = tabs[0]?.url?.includes('mydramalist.com');
+              chrome.runtime.sendMessage({ 
+                action: 'search', 
+                query: search, 
+                updateCurrentTab: isMdlTab
+              });
+              window.close();
+            });
+          });
+          div.querySelector('.delete-search-btn').addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering the search click
+            deleteRecentSearch(search);
+          });
+          list.appendChild(div);
+        });
+      }
+    });
+  }
+
   chrome.storage.local.get(['recentSearches', 'mdlTimeSpent', 'episodeNotifications'], (result) => {
     const searches = result.recentSearches || [];
     const timeSpent = result.mdlTimeSpent || 0;
@@ -129,28 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     timeSpan.textContent = `Today: ${formatTime(timeSpent)}`;
 
-    if (searches.length === 0) {
-      list.innerHTML = '<div class="search-item">No recent searches</div>';
-    } else {
-      searches.slice(0, 10).forEach((search, index) => {
-        const div = document.createElement('div');
-        div.className = 'search-item';
-        div.textContent = search;
-        div.style.animationDelay = `${index * 0.05}s`;
-        div.addEventListener('click', () => {
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            const isMdlTab = tabs[0]?.url?.includes('mydramalist.com');
-            chrome.runtime.sendMessage({ 
-              action: 'search', 
-              query: search, 
-              updateCurrentTab: isMdlTab
-            });
-            window.close();
-          });
-        });
-        list.appendChild(div);
-      });
-    }
+    updateRecentSearches();
 
     notifyBtn.addEventListener('click', () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -160,17 +188,36 @@ document.addEventListener('DOMContentLoaded', () => {
           notificationsMenu.style.display = 'none';
           formSubmit.onclick = () => {
             const title = formTitle.value.trim();
-            const timerMs = parseTimer(formDays.value, formHours.value, formMins.value);
+            const days = formDays.value;
+            const hours = formHours.value;
+            const mins = formMins.value;
             const url = formUrl.value.trim();
-            console.log('Form submitted:', { title, timerMs, url });
-            if (title && isValidUrl(url)) {
-              scheduleNotification(title, '', timerMs, url);
-              switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-              notifyForm.style.display = 'none';
-              updateNotificationsList();
-            } else if (!isValidUrl(url)) {
-              alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+
+            console.log('Form submitted:', { title, days, hours, mins, url });
+
+            // Validation
+            if (!title) {
+              alert('Please enter a drama title.');
+              return;
             }
+            if (!isValidUrl(url)) {
+              alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+              return;
+            }
+
+            const daysValue = parseInt(days || 0);
+            const hoursValue = parseInt(hours || 0);
+            const minsValue = parseInt(mins || 0);
+            if (daysValue === 0 && hoursValue === 0 && minsValue === 0) {
+              alert('Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.');
+              return;
+            }
+
+            const timerMs = parseTimer(days, hours, mins);
+            scheduleNotification(title, '', timerMs, url);
+            switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+            notifyForm.style.display = 'none';
+            updateNotificationsList();
           };
           formCancel.onclick = () => {
             switchTab(tabRecent, tabNotifications, list, notificationsMenu);
@@ -197,17 +244,36 @@ document.addEventListener('DOMContentLoaded', () => {
             notificationsMenu.style.display = 'none';
             formSubmit.onclick = () => {
               const title = formTitle.value.trim();
-              const timerMs = parseTimer(formDays.value, formHours.value, formMins.value);
+              const days = formDays.value;
+              const hours = formHours.value;
+              const mins = formMins.value;
               const url = formUrl.value.trim();
-              console.log('Form submitted (manual):', { title, timerMs, url });
-              if (title && isValidUrl(url)) {
-                scheduleNotification(title, '', timerMs, url);
-                switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-                notifyForm.style.display = 'none';
-                updateNotificationsList();
-              } else if (!isValidUrl(url)) {
-                alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+
+              console.log('Form submitted (manual):', { title, days, hours, mins, url });
+
+              // Validation
+              if (!title) {
+                alert('Please enter a drama title.');
+                return;
               }
+              if (!isValidUrl(url)) {
+                alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+                return;
+              }
+
+              const daysValue = parseInt(days || 0);
+              const hoursValue = parseInt(hours || 0);
+              const minsValue = parseInt(mins || 0);
+              if (daysValue === 0 && hoursValue === 0 && minsValue === 0) {
+                alert('Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.');
+                return;
+              }
+
+              const timerMs = parseTimer(days, hours, mins);
+              scheduleNotification(title, '', timerMs, url);
+              switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+              notifyForm.style.display = 'none';
+              updateNotificationsList();
             };
             formCancel.onclick = () => {
               switchTab(tabRecent, tabNotifications, list, notificationsMenu);
@@ -228,17 +294,36 @@ document.addEventListener('DOMContentLoaded', () => {
               formTitle.value = title || '';
               formSubmit.onclick = () => {
                 const title = formTitle.value.trim();
-                const timerMs = parseTimer(formDays.value, formHours.value, formMins.value);
+                const days = formDays.value;
+                const hours = formHours.value;
+                const mins = formMins.value;
                 const url = formUrl.value.trim();
-                console.log('Form submitted (fallback):', { title, timerMs, url });
-                if (title && isValidUrl(url)) {
-                  scheduleNotification(title, '', timerMs, url);
-                  switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-                  notifyForm.style.display = 'none';
-                  updateNotificationsList();
-                } else if (!isValidUrl(url)) {
-                  alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+
+                console.log('Form submitted (fallback):', { title, days, hours, mins, url });
+
+                // Validation
+                if (!title) {
+                  alert('Please enter a drama title.');
+                  return;
                 }
+                if (!isValidUrl(url)) {
+                  alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+                  return;
+                }
+
+                const daysValue = parseInt(days || 0);
+                const hoursValue = parseInt(hours || 0);
+                const minsValue = parseInt(mins || 0);
+                if (daysValue === 0 && hoursValue === 0 && minsValue === 0) {
+                  alert('Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.');
+                  return;
+                }
+
+                const timerMs = parseTimer(days, hours, mins);
+                scheduleNotification(title, '', timerMs, url);
+                switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+                notifyForm.style.display = 'none';
+                updateNotificationsList();
               };
               formCancel.onclick = () => {
                 switchTab(tabRecent, tabNotifications, list, notificationsMenu);

@@ -364,6 +364,12 @@ form {
   text-overflow: ellipsis;
 }
 
+.search-item .search-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .search-item::before {
   content: '';
   position: absolute;
@@ -396,12 +402,29 @@ form {
   font-size: 13px;
   opacity: 0.7;
   transition: opacity 0.3s ease, transform 0.3s ease;
+  margin-left: 8px;
 }
 
 .search-item:hover::after {
   opacity: 1;
   transform: translateX(5px);
   color: #ffffff;
+}
+
+.delete-search-btn {
+  padding: 2px 6px;
+  background: #ff4444;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: background 0.3s ease;
+}
+
+.delete-search-btn:hover {
+  background: #cc3333;
 }
 
 .tab-content::-webkit-scrollbar,
