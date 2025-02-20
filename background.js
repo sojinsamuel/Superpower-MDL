@@ -122,33 +122,49 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
 });
 
 function checkNotifications(isStartup = false) {
-  chrome.storage.local.get(['episodeNotifications'], (result) => {
+  chrome.storage.local.get(['episodeNotifications', 'expiredNotifications'], (result) => {
     let notifications = result.episodeNotifications || [];
+    let expiredNotifications = result.expiredNotifications || [];
     const now = Date.now();
-    const expiredNotifications = [];
+    const toExpire = [];
 
     notifications.forEach((notif, index) => {
       if (notif.releaseTime <= now) {
+        const notificationId = `episode_${encodeURIComponent(notif.title)}_${index}`;
         const messageType = isStartup ? 'missed' : 'new';
-        chrome.notifications.create(`episode-${notif.title}-${index}`, {
-          type: 'image',
-          iconUrl: 'icon48.png',
-          title: `${notif.title} - ${isStartup ? 'Missed' : 'New'} Episode!`,
-          message: isStartup ? 'You missed it! The episode has already released.' : 'The next episode is now available.',
-          imageUrl: notif.imageUrl || 'icon128.png'
-        }, (notificationId) => {
-          if (chrome.runtime.lastError) {
-            console.error('Notification failed:', chrome.runtime.lastError);
+        console.log('Creating notification:', { id: notificationId, title: notif.title, url: notif.url });
+        chrome.notifications.create(
+          notificationId,
+          {
+            type: 'image',
+            iconUrl: 'icon48.png',
+            title: `${notif.title} - ${isStartup ? 'Missed' : 'New'} Episode!`,
+            message: isStartup
+              ? 'You missed it! The episode has already released.'
+              : 'The next episode is now available.',
+            imageUrl: notif.imageUrl || 'icon128.png'
+          },
+          (id) => {
+            if (chrome.runtime.lastError) {
+              console.error('Notification failed:', chrome.runtime.lastError);
+            }
           }
-        });
-        expiredNotifications.push(index);
+        );
+        toExpire.push(index);
+        expiredNotifications.push({ ...notif, notificationId, expiredAt: now });
       }
     });
 
-    if (expiredNotifications.length > 0) {
-      expiredNotifications.sort((a, b) => b - a);
-      expiredNotifications.forEach(index => notifications.splice(index, 1));
-      chrome.storage.local.set({ episodeNotifications: notifications });
+    if (toExpire.length > 0) {
+      toExpire.sort((a, b) => b - a);
+      toExpire.forEach((index) => notifications.splice(index, 1));
+      expiredNotifications = expiredNotifications.filter(
+        (n) => now - n.expiredAt < 24 * 60 * 60 * 1000 // Keep for 24 hours
+      );
+      chrome.storage.local.set({
+        episodeNotifications: notifications,
+        expiredNotifications: expiredNotifications
+      });
     }
   });
 }
@@ -166,14 +182,20 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.notifications.onClicked.addListener((notificationId) => {
-  if (notificationId.startsWith('episode-')) {
-    const title = notificationId.split('-')[1];
-    chrome.storage.local.get(['episodeNotifications'], (result) => {
+  if (notificationId.startsWith('episode_')) {
+    chrome.storage.local.get(['episodeNotifications', 'expiredNotifications'], (result) => {
       const notifications = result.episodeNotifications || [];
-      const notif = notifications.find(n => n.title === title) || {};
-      console.log("url target", notif.url)
-      const redirectUrl = notif.url || `${SEARCH_BASE_URL}${encodeURIComponent(title)}`;
-      chrome.tabs.create({ url: redirectUrl });
+      const expiredNotifications = result.expiredNotifications || [];
+      const allNotifications = [...notifications, ...expiredNotifications];
+      const notif = allNotifications.find((n) => n.notificationId === notificationId) || {};
+      
+      const redirectUrl = notif.url || `${SEARCH_BASE_URL}${encodeURIComponent(notif.title || '')}`;
+      console.log('Notification clicked:', { notificationId, url: notif.url, redirectUrl });
+      if (redirectUrl) {
+        chrome.tabs.create({ url: redirectUrl });
+      } else {
+        console.warn('No valid redirect URL found for notification:', notificationId);
+      }
     });
   }
 });
@@ -210,7 +232,7 @@ chrome.omnibox.onInputChanged.addListener((text, suggest) => {
   chrome.storage.local.get(['recentSearches'], (result) => {
     const recentSearches = (result.recentSearches || []).slice(0, MAX_OMNIBOX_SEARCHES);
     const suggestions = [{ content: trimmedText, description: TEXT.omniboxSuggestion.replace('%s', trimmedText) }];
-    recentSearches.forEach(search => {
+    recentSearches.forEach((search) => {
       suggestions.push({ content: search, description: TEXT.omniboxRecent.replace('%s', search) });
     });
     suggest(suggestions);
@@ -231,7 +253,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === 'deleteNotification' && message.title) {
     chrome.storage.local.get(['episodeNotifications'], (result) => {
       const notifications = result.episodeNotifications || [];
-      const updatedNotifications = notifications.filter(n => n.title !== message.title);
+      const updatedNotifications = notifications.filter((n) => n.title !== message.title);
       chrome.storage.local.set({ episodeNotifications: updatedNotifications }, () => {
         sendResponse({ success: true });
       });

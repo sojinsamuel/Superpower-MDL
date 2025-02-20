@@ -59,7 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return;
       }
-      notifications.unshift({ title, imageUrl, releaseTime, url });
+      const notificationData = { title, imageUrl, releaseTime, url };
+      notifications.unshift(notificationData);
+      console.log('Storing notification:', notificationData);
       chrome.storage.local.set({ episodeNotifications: notifications }, () => {
         updateNotificationsList();
         if (imageUrl) {
@@ -160,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = formTitle.value.trim();
             const timerMs = parseTimer(formDays.value, formHours.value, formMins.value);
             const url = formUrl.value.trim();
+            console.log('Form submitted:', { title, timerMs, url });
             if (title && isValidUrl(url)) {
               scheduleNotification(title, '', timerMs, url);
               switchTab(tabNotifications, tabRecent, notificationsMenu, list);
@@ -196,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
               const title = formTitle.value.trim();
               const timerMs = parseTimer(formDays.value, formHours.value, formMins.value);
               const url = formUrl.value.trim();
+              console.log('Form submitted (manual):', { title, timerMs, url });
               if (title && isValidUrl(url)) {
                 scheduleNotification(title, '', timerMs, url);
                 switchTab(tabNotifications, tabRecent, notificationsMenu, list);
@@ -226,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const title = formTitle.value.trim();
                 const timerMs = parseTimer(formDays.value, formHours.value, formMins.value);
                 const url = formUrl.value.trim();
+                console.log('Form submitted (fallback):', { title, timerMs, url });
                 if (title && isValidUrl(url)) {
                   scheduleNotification(title, '', timerMs, url);
                   switchTab(tabNotifications, tabRecent, notificationsMenu, list);
