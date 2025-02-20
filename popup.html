@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDL Companion</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <svg class="logo" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#6A5ACD"/>
+        <path d="M2 17L12 22L22 17" fill="#6A5ACD"/>
+      </svg>
+      <h1>MDL Companion</h1>
+    </header>
+    <div class="stats">
+      <span id="time-spent">Today: 0s</span>
+      <button id="notify-btn">Notify</button>
+    </div>
+    <div class="main-content">
+      <div class="sidebar">
+        <button id="tab-recent" class="tab-btn" title="Recent Searches">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#6A5ACD"/>
+          </svg>
+        </button>
+        <button id="tab-notifications" class="tab-btn active" title="Notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z" fill="#6A5ACD"/>
+          </svg>
+        </button>
+      </div>
+      <div class="tab-content">
+        <div id="recent-searches" class="tab-pane" style="display: none;">
+          <h2>Recent Searches</h2>
+          <!-- Searches will be added here dynamically -->
+        </div>
+        <div id="notifications-menu" class="tab-pane active">
+          <h2>Notifications</h2>
+          <div id="notifications-list"></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-container" id="notify-form" style="display: none;">
+      <h2>Set Episode Notification</h2>
+      <form id="notification-form">
+        <div class="form-field">
+          <label for="form-title">Drama Title <span class="required">*</span></label>
+          <input type="text" id="form-title" placeholder="e.g., Study Group" required>
+        </div>
+        <div class="form-field timer-group">
+          <label>Air Date <span class="required">*</span></label>
+          <div class="timer-inputs">
+            <div class="timer-input">
+              <input type="number" id="form-days" placeholder="0" min="0" required>
+              <span class="timer-label">Days</span>
+            </div>
+            <div class="timer-input">
+              <input type="number" id="form-hours" placeholder="0" min="0" max="23" required>
+              <span class="timer-label">Hours</span>
+            </div>
+            <div class="timer-input">
+              <input type="number" id="form-mins" placeholder="0" min="0" max="59" required>
+              <span class="timer-label">Minutes</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="form-url">Drama URL <span class="optional">(optional)</span></label>
+          <input type="url" id="form-url" placeholder="e.g., https://mydramalist.com/drama">
+          <small class="hint">Link to the drama or episode page</small>
+        </div>
+        <div class="form-buttons">
+          <button type="submit" id="form-submit">Set Notification</button>
+          <button type="button" id="form-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
