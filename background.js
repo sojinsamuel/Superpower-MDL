@@ -158,14 +158,18 @@ function checkNotifications(isStartup = false) {
     if (toExpire.length > 0) {
       toExpire.sort((a, b) => b - a);
       toExpire.forEach((index) => notifications.splice(index, 1));
-      expiredNotifications = expiredNotifications.filter(
-        (n) => now - n.expiredAt < 24 * 60 * 60 * 1000 // Keep for 24 hours
-      );
-      chrome.storage.local.set({
-        episodeNotifications: notifications,
-        expiredNotifications: expiredNotifications
-      });
     }
+
+    expiredNotifications = expiredNotifications.filter(
+      (n) => now - n.expiredAt < 50 * 60 * 60 * 1000 // Keep for 50 hours
+    );
+
+    chrome.storage.local.set({
+      episodeNotifications: notifications,
+      expiredNotifications: expiredNotifications
+    }, () => {
+      console.log('Notifications updated:', { active: notifications.length, expired: expiredNotifications.length });
+    });
   });
 }
 

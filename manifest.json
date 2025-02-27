@@ -1,42 +1,43 @@
 {
-    "manifest_version": 3,
-    "name": "MDL Search - MyDramaList Finder",
-    "version": "1.7.0",
-    "description": "Search MyDramaList instantly! Highlight text, right-click, use Ctrl+Shift+Y, or type 'mdl' in the address bar. Track time and get episode release alerts via popup.",
-    "permissions": [
-      "contextMenus",
-      "activeTab",
-      "scripting",
-      "omnibox",
-      "storage",
-      "notifications",
-      "alarms"
-    ],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "action": {
-      "default_popup": "popup.html",
-      "default_icon": {
+  "manifest_version": 3,
+  "name": "MDL Search - MyDramaList Finder",
+  "version": "0.0.1",
+  "description": "Search MyDramaList instantly! Highlight text, right-click, use Ctrl+Shift+Y, or type 'mdl' in the address bar. Track time and get episode release alerts via popup.",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "omnibox",
+    "storage",
+    "notifications",
+    "alarms"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
       "128": "icon128.png"
     }
-    },"icons": {
+  },
+  "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
-    "omnibox": {
-      "keyword": "mdl"
-    },
-    "commands": {
-      "search-mdl": {
-        "suggested_key": {
-          "default": "Ctrl+Shift+M",
-          "mac": "Command+Shift+M"
-        },
-        "description": "Search selected text on MyDramaList"
-      }
+  "omnibox": {
+    "keyword": "mdl"
+  },
+  "commands": {
+    "search-mdl": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Search selected text on MyDramaList"
     }
   }
+}

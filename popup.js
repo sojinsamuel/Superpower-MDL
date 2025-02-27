@@ -162,12 +162,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           });
           div.querySelector('.delete-search-btn').addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent triggering the search click
+            e.stopPropagation();
             deleteRecentSearch(search);
           });
           list.appendChild(div);
         });
       }
+    });
+  }
+
+  function getCurrentTabUrl(callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url || '';
+      callback(url);
     });
   }
 
@@ -186,6 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
           notifyForm.style.display = 'block';
           list.style.display = 'none';
           notificationsMenu.style.display = 'none';
+          
+          // Prefill the Drama URL with the current tab's URL
+          getCurrentTabUrl((url) => {
+            formUrl.value = url;
+          });
+
           formSubmit.onclick = () => {
             const title = formTitle.value.trim();
             const days = formDays.value;
@@ -195,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('Form submitted:', { title, days, hours, mins, url });
 
-            // Validation
             if (!title) {
               alert('Please enter a drama title.');
               return;
@@ -219,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             notifyForm.style.display = 'none';
             updateNotificationsList();
           };
+
           formCancel.onclick = () => {
             switchTab(tabRecent, tabNotifications, list, notificationsMenu);
           };
@@ -242,6 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
             notifyForm.style.display = 'block';
             list.style.display = 'none';
             notificationsMenu.style.display = 'none';
+            
+            // Prefill the Drama URL with the current tab's URL
+            getCurrentTabUrl((url) => {
+              formUrl.value = url;
+            });
+
             formSubmit.onclick = () => {
               const title = formTitle.value.trim();
               const days = formDays.value;
@@ -251,7 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
               console.log('Form submitted (manual):', { title, days, hours, mins, url });
 
-              // Validation
               if (!title) {
                 alert('Please enter a drama title.');
                 return;
@@ -275,6 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
               notifyForm.style.display = 'none';
               updateNotificationsList();
             };
+
             formCancel.onclick = () => {
               switchTab(tabRecent, tabNotifications, list, notificationsMenu);
             };
@@ -292,6 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
               list.style.display = 'none';
               notificationsMenu.style.display = 'none';
               formTitle.value = title || '';
+              
+              // Prefill the Drama URL with the current tab's URL
+              getCurrentTabUrl((url) => {
+                formUrl.value = url;
+              });
+
               formSubmit.onclick = () => {
                 const title = formTitle.value.trim();
                 const days = formDays.value;
@@ -301,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 console.log('Form submitted (fallback):', { title, days, hours, mins, url });
 
-                // Validation
                 if (!title) {
                   alert('Please enter a drama title.');
                   return;
@@ -325,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 notifyForm.style.display = 'none';
                 updateNotificationsList();
               };
+
               formCancel.onclick = () => {
                 switchTab(tabRecent, tabNotifications, list, notificationsMenu);
               };
