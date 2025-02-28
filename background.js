@@ -5,9 +5,24 @@ const MAX_OMNIBOX_SEARCHES = 3;
 const MAX_POPUP_SEARCHES = 10;
 
 const LOCALE_TEXT = {
-  en: { menuTitle: 'Search "%s" on MyDramaList', omniboxDefault: 'Type your search query for MyDramaList', omniboxSuggestion: 'Search "%s" on MyDramaList', omniboxRecent: 'Recent: %s' },
-  ko: { menuTitle: '"%s"을(를) MyDramaList에서 검색', omniboxDefault: 'MyDramaList 검색어를 입력하세요', omniboxSuggestion: '"%s"을(를) MyDramaList에서 검색', omniboxRecent: '최근: %s' },
-  zh: { menuTitle: '在MyDramaList上搜索“%s”', omniboxDefault: '输入MyDramaList搜索查询', omniboxSuggestion: '在MyDramaList上搜索“%s”', omniboxRecent: '最近: %s' }
+  en: { 
+    menuTitle: 'Search "%s" on MyDramaList', 
+    omniboxDefault: 'Type your search query for Superpower MDL',
+    omniboxSuggestion: 'Search "%s" on MyDramaList', 
+    omniboxRecent: 'Recent: %s' 
+  },
+  ko: { 
+    menuTitle: '"%s"을(를) MyDramaList에서 검색', 
+    omniboxDefault: 'Superpower MDL 검색어를 입력하세요', 
+    omniboxSuggestion: '"%s"을(를) MyDramaList에서 검색', 
+    omniboxRecent: '최근: %s' 
+  },
+  zh: { 
+    menuTitle: '在MyDramaList上搜索“%s”', 
+    omniboxDefault: '输入Superpower MDL搜索查询', 
+    omniboxSuggestion: '在MyDramaList上搜索“%s”', 
+    omniboxRecent: '最近: %s' 
+  }
 };
 
 const userLanguage = (navigator.language || 'en').startsWith('ko') ? 'ko' : (navigator.language || 'en').startsWith('zh') ? 'zh' : 'en';
@@ -137,7 +152,7 @@ function checkNotifications(isStartup = false) {
           notificationId,
           {
             type: 'image',
-            iconUrl: 'icon48.png',
+            iconUrl: notif.imageUrl || 'icon48.png',
             title: `${notif.title} - ${isStartup ? 'Missed' : 'New'} Episode!`,
             message: isStartup
               ? 'You missed it! The episode has already released.'
@@ -161,7 +176,7 @@ function checkNotifications(isStartup = false) {
     }
 
     expiredNotifications = expiredNotifications.filter(
-      (n) => now - n.expiredAt < 50 * 60 * 60 * 1000 // Keep for 50 hours
+      (n) => now - n.expiredAt < 96 * 60 * 60 * 1000 // Keep for 96 hours
     );
 
     chrome.storage.local.set({

@@ -3,19 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MDL Companion</title>
+  <title>Superpower MDL</title>
   <link rel="stylesheet" href="popup.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
-    <header>
-      <svg class="logo" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#6A5ACD"/>
-        <path d="M2 17L12 22L22 17" fill="#6A5ACD"/>
-      </svg>
-      <h1>MDL Companion</h1>
-    </header>
     <div class="stats">
       <span id="time-spent">Today: 0s</span>
       <button id="notify-btn">Notify</button>
@@ -39,7 +32,13 @@
           <!-- Searches will be added here dynamically -->
         </div>
         <div id="notifications-menu" class="tab-pane active">
-          <h2>Notifications</h2>
+          <div class="notifications-header">
+            <h2>Notifications</h2>
+            <select id="sort-notifications">
+              <option value="default">Recently Added</option>
+              <option value="soon">Soon to Air</option>
+            </select>
+          </div>
           <div id="notifications-list"></div>
         </div>
       </div>
@@ -73,7 +72,7 @@
           <input type="url" id="form-url" placeholder="e.g., https://mydramalist.com/drama">
           <small class="hint">Link to the drama or episode page</small>
         </div>
-        <div class="form-feedback" id="form-feedback" style="display: none;"></div> <!-- Added feedback element -->
+        <div class="form-feedback" id="form-feedback" style="display: none;"></div>
         <div class="form-buttons">
           <button type="submit" id="form-submit">Set Notification</button>
           <button type="button" id="form-cancel">Cancel</button>

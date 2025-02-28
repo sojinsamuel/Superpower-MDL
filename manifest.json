@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "MDL Search - MyDramaList Finder",
+  "name": "Superpower MDL",
   "version": "0.0.0.1",
-  "description": "Search MyDramaList instantly! Highlight text, right-click, use Ctrl+Shift+Y, or type 'mdl' in the address bar. Track time and get episode release alerts via popup.",
+  "description": "Supercharge your MyDramaList experience! Search dramas instantly, track time spent, and get episode release alerts with ease.",
   "permissions": [
     "contextMenus",
     "activeTab",
@@ -29,13 +29,13 @@
     "128": "icon128.png"
   },
   "omnibox": {
-    "keyword": "mdl"
+    "keyword": "md"
   },
   "commands": {
     "search-mdl": {
       "suggested_key": {
-        "default": "Ctrl+Shift+Y",
-        "mac": "Command+Shift+Y"
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
       },
       "description": "Search selected text on MyDramaList"
     }

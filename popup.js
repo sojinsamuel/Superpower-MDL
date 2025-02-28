@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const notificationsList = document.getElementById('notifications-list');
   const tabRecent = document.getElementById('tab-recent');
   const tabNotifications = document.getElementById('tab-notifications');
+  const sortNotifications = document.getElementById('sort-notifications');
 
   function formatTime(ms) {
     const seconds = Math.floor(ms / 1000);
@@ -59,9 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (existingIndex !== -1) {
           if (isForm) {
             console.log('Duplicate detected in form:', title);
-            formFeedback.textContent = `Notification already exists for "${title}"`;
+            formFeedback.textContent = `Notification already exists for "${title}" or update the title to support multiple eps of a drama`;
             formFeedback.style.display = 'block';
-            setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
+            setTimeout(() => { formFeedback.style.display = 'none'; }, 3000);
           } else {
             switchTab(tabNotifications, tabRecent, notificationsMenu, list);
             notificationsList.innerHTML = `<div class="notification-item">Notification already exists for "${title}"</div>`;
@@ -96,8 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateNotificationsList(callback) {
-    chrome.storage.local.get(['episodeNotifications'], (result) => {
-      const notifications = result.episodeNotifications || [];
+    chrome.storage.local.get(['episodeNotifications', 'sortPreference'], (result) => {
+      let notifications = result.episodeNotifications || [];
+      const sortPreference = result.sortPreference || 'default';
+
+      // Apply sorting based on preference
+      if (sortPreference === 'soon') {
+        notifications.sort((a, b) => a.releaseTime - b.releaseTime); // Earliest first
+      } // Default keeps original order (newest first)
+
       notificationsList.innerHTML = '';
       if (notifications.length === 0) {
         notificationsList.innerHTML = '<div class="notification-item">No notifications set</div>';
@@ -199,12 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  chrome.storage.local.get(['recentSearches', 'mdlTimeSpent', 'episodeNotifications'], (result) => {
+  chrome.storage.local.get(['recentSearches', 'mdlTimeSpent', 'episodeNotifications', 'sortPreference'], (result) => {
     const searches = result.recentSearches || [];
     const timeSpent = result.mdlTimeSpent || 0;
     const notifications = result.episodeNotifications || [];
+    const sortPreference = result.sortPreference || 'default';
 
     timeSpan.textContent = `Today: ${formatTime(timeSpent)}`;
+
+    // Set initial sort preference
+    sortNotifications.value = sortPreference;
 
     updateRecentSearches();
 
@@ -266,7 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // DOM version: Show "Loading..." immediately
         switchTab(tabNotifications, tabRecent, notificationsMenu, list);
         notificationsList.innerHTML = '<div class="notification-item">Loading...</div>';
 
@@ -422,6 +433,14 @@ document.addEventListener('DOMContentLoaded', () => {
     tabNotifications.addEventListener('click', () => {
       switchTab(tabNotifications, tabRecent, notificationsMenu, list);
       updateNotificationsList();
+    });
+
+    // Handle sort preference change
+    sortNotifications.addEventListener('change', () => {
+      const sortPreference = sortNotifications.value;
+      chrome.storage.local.set({ sortPreference }, () => {
+        updateNotificationsList();
+      });
     });
 
     updateNotificationsList();
