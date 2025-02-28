@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const formUrl = document.getElementById('form-url');
   const formSubmit = document.getElementById('form-submit');
   const formCancel = document.getElementById('form-cancel');
+  const formFeedback = document.getElementById('form-feedback');
   const notificationsMenu = document.getElementById('notifications-menu');
   const notificationsList = document.getElementById('notifications-list');
   const tabRecent = document.getElementById('tab-recent');
@@ -36,40 +37,60 @@ document.addEventListener('DOMContentLoaded', () => {
     return url === '' || /^(https?:\/\/[^\s/$.?#].[^\s]*)$/i.test(url);
   }
 
-  function scheduleNotification(title, imageUrl, timerMs, url = '') {
+  function scheduleNotification(title, imageUrl, timerMs, url = '', isForm = false) {
     if (timerMs <= 0) {
-      switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-      notificationsList.innerHTML = '<div class="notification-item">No upcoming episode to notify for "' + title + '"</div>';
-      setTimeout(updateNotificationsList, 2000);
-      return;
+      if (isForm) {
+        formFeedback.textContent = `No upcoming episode to notify for "${title}"`;
+        formFeedback.style.display = 'block';
+        setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
+      } else {
+        switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+        notificationsList.innerHTML = '<div class="notification-item">No upcoming episode to notify for "' + title + '"</div>';
+        setTimeout(updateNotificationsList, 2000);
+      }
+      return false;
     }
 
     const releaseTime = Date.now() + timerMs;
-    chrome.storage.local.get(['episodeNotifications'], (result) => {
-      const notifications = result.episodeNotifications || [];
-      const existingIndex = notifications.findIndex(n => n.title === title);
-      if (existingIndex !== -1) {
-        switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-        updateNotificationsList(() => {
-          const items = notificationsList.getElementsByClassName('notification-item');
-          for (let item of items) {
-            if (item.textContent.includes(title)) {
-              item.classList.add('duplicate-pulse');
-              setTimeout(() => item.classList.remove('duplicate-pulse'), 500);
-              break;
-            }
+    return new Promise((resolve) => {
+      chrome.storage.local.get(['episodeNotifications'], (result) => {
+        const notifications = result.episodeNotifications || [];
+        const existingIndex = notifications.findIndex(n => n.title === title);
+        if (existingIndex !== -1) {
+          if (isForm) {
+            console.log('Duplicate detected in form:', title);
+            formFeedback.textContent = `Notification already exists for "${title}"`;
+            formFeedback.style.display = 'block';
+            setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
+          } else {
+            switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+            notificationsList.innerHTML = `<div class="notification-item">Notification already exists for "${title}"</div>`;
+            setTimeout(() => {
+              updateNotificationsList(() => {
+                const items = notificationsList.getElementsByClassName('notification-item');
+                for (let item of items) {
+                  if (item.textContent.includes(title)) {
+                    item.classList.add('duplicate-pulse');
+                    setTimeout(() => item.classList.remove('duplicate-pulse'), 500);
+                    break;
+                  }
+                }
+              });
+            }, 2000);
           }
-        });
-        return;
-      }
-      const notificationData = { title, imageUrl, releaseTime, url };
-      notifications.unshift(notificationData);
-      console.log('Storing notification:', notificationData);
-      chrome.storage.local.set({ episodeNotifications: notifications }, () => {
-        updateNotificationsList();
-        if (imageUrl) {
-          switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+          resolve(false);
+          return;
         }
+        const notificationData = { title, imageUrl, releaseTime, url };
+        notifications.unshift(notificationData);
+        console.log('Storing notification:', notificationData);
+        chrome.storage.local.set({ episodeNotifications: notifications }, () => {
+          updateNotificationsList();
+          if (imageUrl && !isForm) {
+            switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+          }
+          resolve(true);
+        });
       });
     });
   }
@@ -194,12 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
           list.style.display = 'none';
           notificationsMenu.style.display = 'none';
           
-          // Prefill the Drama URL with the current tab's URL
           getCurrentTabUrl((url) => {
             formUrl.value = url;
           });
 
-          formSubmit.onclick = () => {
+          formSubmit.onclick = async (event) => {
+            event.preventDefault();
             const title = formTitle.value.trim();
             const days = formDays.value;
             const hours = formHours.value;
@@ -209,11 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Form submitted:', { title, days, hours, mins, url });
 
             if (!title) {
-              alert('Please enter a drama title.');
+              formFeedback.textContent = 'Please enter a drama title.';
+              formFeedback.style.display = 'block';
+              setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
               return;
             }
             if (!isValidUrl(url)) {
-              alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+              formFeedback.textContent = 'Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.';
+              formFeedback.style.display = 'block';
+              setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
               return;
             }
 
@@ -221,15 +246,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const hoursValue = parseInt(hours || 0);
             const minsValue = parseInt(mins || 0);
             if (daysValue === 0 && hoursValue === 0 && minsValue === 0) {
-              alert('Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.');
+              formFeedback.textContent = 'Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.';
+              formFeedback.style.display = 'block';
+              setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
               return;
             }
 
             const timerMs = parseTimer(days, hours, mins);
-            scheduleNotification(title, '', timerMs, url);
-            switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-            notifyForm.style.display = 'none';
-            updateNotificationsList();
+            const success = await scheduleNotification(title, '', timerMs, url, true);
+            if (success) {
+              switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+              notifyForm.style.display = 'none';
+            }
           };
 
           formCancel.onclick = () => {
@@ -238,9 +266,26 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        // DOM version: Show "Loading..." immediately
+        switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+        notificationsList.innerHTML = '<div class="notification-item">Loading...</div>';
+
         chrome.scripting.executeScript({
           target: { tabId: tabs[0].id },
           func: () => {
+            const countdown = document.querySelector('.countdown');
+            if (countdown) {
+              countdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              return new Promise(resolve => setTimeout(resolve, 2000)).then(() => {
+                const title = document.querySelector('.film-title a')?.textContent || '';
+                const imageUrl = document.querySelector('.film-cover img')?.src || '';
+                const days = document.querySelector('.countdown .days .value')?.textContent || '0';
+                const hours = document.querySelector('.countdown .hours .value')?.textContent || '0';
+                const mins = document.querySelector('.countdown .mins .value')?.textContent || '0';
+                const secs = document.querySelector('.countdown .secs .value')?.textContent || '0';
+                return { title, imageUrl, days, hours, mins, secs };
+              });
+            }
             const title = document.querySelector('.film-title a')?.textContent || '';
             const imageUrl = document.querySelector('.film-cover img')?.src || '';
             const days = document.querySelector('.countdown .days .value')?.textContent || '0';
@@ -256,12 +301,12 @@ document.addEventListener('DOMContentLoaded', () => {
             list.style.display = 'none';
             notificationsMenu.style.display = 'none';
             
-            // Prefill the Drama URL with the current tab's URL
             getCurrentTabUrl((url) => {
               formUrl.value = url;
             });
 
-            formSubmit.onclick = () => {
+            formSubmit.onclick = async (event) => {
+              event.preventDefault();
               const title = formTitle.value.trim();
               const days = formDays.value;
               const hours = formHours.value;
@@ -271,11 +316,15 @@ document.addEventListener('DOMContentLoaded', () => {
               console.log('Form submitted (manual):', { title, days, hours, mins, url });
 
               if (!title) {
-                alert('Please enter a drama title.');
+                formFeedback.textContent = 'Please enter a drama title.';
+                formFeedback.style.display = 'block';
+                setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
                 return;
               }
               if (!isValidUrl(url)) {
-                alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+                formFeedback.textContent = 'Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.';
+                formFeedback.style.display = 'block';
+                setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
                 return;
               }
 
@@ -283,15 +332,18 @@ document.addEventListener('DOMContentLoaded', () => {
               const hoursValue = parseInt(hours || 0);
               const minsValue = parseInt(mins || 0);
               if (daysValue === 0 && hoursValue === 0 && minsValue === 0) {
-                alert('Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.');
+                formFeedback.textContent = 'Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.';
+                formFeedback.style.display = 'block';
+                setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
                 return;
               }
 
               const timerMs = parseTimer(days, hours, mins);
-              scheduleNotification(title, '', timerMs, url);
-              switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-              notifyForm.style.display = 'none';
-              updateNotificationsList();
+              const success = await scheduleNotification(title, '', timerMs, url, true);
+              if (success) {
+                switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+                notifyForm.style.display = 'none';
+              }
             };
 
             formCancel.onclick = () => {
@@ -312,12 +364,12 @@ document.addEventListener('DOMContentLoaded', () => {
               notificationsMenu.style.display = 'none';
               formTitle.value = title || '';
               
-              // Prefill the Drama URL with the current tab's URL
               getCurrentTabUrl((url) => {
                 formUrl.value = url;
               });
 
-              formSubmit.onclick = () => {
+              formSubmit.onclick = async (event) => {
+                event.preventDefault();
                 const title = formTitle.value.trim();
                 const days = formDays.value;
                 const hours = formHours.value;
@@ -327,11 +379,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Form submitted (fallback):', { title, days, hours, mins, url });
 
                 if (!title) {
-                  alert('Please enter a drama title.');
+                  formFeedback.textContent = 'Please enter a drama title.';
+                  formFeedback.style.display = 'block';
+                  setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
                   return;
                 }
                 if (!isValidUrl(url)) {
-                  alert('Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.');
+                  formFeedback.textContent = 'Please enter a valid URL (e.g., https://streamingplatform.com/episode) or leave it blank.';
+                  formFeedback.style.display = 'block';
+                  setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
                   return;
                 }
 
@@ -339,15 +395,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hoursValue = parseInt(hours || 0);
                 const minsValue = parseInt(mins || 0);
                 if (daysValue === 0 && hoursValue === 0 && minsValue === 0) {
-                  alert('Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.');
+                  formFeedback.textContent = 'Please set at least one timer field (Days, Hours, or Minutes) to a value greater than 0.';
+                  formFeedback.style.display = 'block';
+                  setTimeout(() => { formFeedback.style.display = 'none'; }, 2000);
                   return;
                 }
 
                 const timerMs = parseTimer(days, hours, mins);
-                scheduleNotification(title, '', timerMs, url);
-                switchTab(tabNotifications, tabRecent, notificationsMenu, list);
-                notifyForm.style.display = 'none';
-                updateNotificationsList();
+                const success = await scheduleNotification(title, '', timerMs, url, true);
+                if (success) {
+                  switchTab(tabNotifications, tabRecent, notificationsMenu, list);
+                  notifyForm.style.display = 'none';
+                }
               };
 
               formCancel.onclick = () => {
