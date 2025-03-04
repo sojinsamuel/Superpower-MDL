@@ -1,5 +1,12 @@
+[link-chrome]: https://chromewebstore.google.com/detail/superpower-mdl/fmenhfapnanfblbaimcdoacigkffldcp "Chrome Web Store"
+
 # Superpower MDL
 
+  <div align="center">
+
+[<img src="https://user-images.githubusercontent.com/574142/232173820-eea32262-2b0f-4ec6-8a38-b1c872981d75.png" height="67" alt="Chrome" valign="middle">][link-chrome]
+
+</div>
 Superpower MDL enhances the MyDramaList experience with quick drama searches, time tracking, and episode release alerts. This Chrome extension offers a simple popup interface to manage notifications and recent searches. Designed for drama fans, it integrates smoothly with MyDramaList pages.
 
 ## Features
@@ -16,7 +23,7 @@ To use Superpower MDL locally or contribute to its development, follow these ste
 
 1. **Clone the Repository**:
 ```
-git clone https://github.com/sojinsamuel/mydramalist-chrome-extension
+git clone https://github.com/sojinsamuel/Superpower-MDL
 ```
 2. **Open Chrome Extensions**:
 - Navigate to `chrome://extensions/` in Chrome.
